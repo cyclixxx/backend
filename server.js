@@ -44,9 +44,10 @@ app.use(function (req, res, next) {
       error : `Can't find ${req.originalUrl}`
   });
 });
+
 mongoose.set('strictQuery', false);
 // const dbUri = "mongodb+srv://cyclixgamesdev:WR1gmj3ScmZZh6vV@cluster0.asnhbpn.mongodb.net/cygcasstest?retryWrites=true&w=majority&appName=Cluster0"
-const dbUri = `mongodb+srv://highscoreteh:eNiIQbm4ZMSor8VL@cluster0.xmpkpjc.mongodb.net/cyclix?retryWrites=true&w=majority`
+const dbUri = `mongodb+srv://highscoreteh:igcdG7O4G6BbgwXQ@cluster0.xmpkpjc.mongodb.net/cyclix?retryWrites=true&w=majority`
 // const dbUri = `mongodb://localhost:27017/cass`;
 mongoose.connect(dbUri, { useNewUrlParser: true, useUnifiedTopology: true, serverSelectionTimeoutMS: 5000  })
   .then((result) => console.log('Database connected'))

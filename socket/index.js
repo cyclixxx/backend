@@ -1,7 +1,7 @@
 const { Server } = require("socket.io");
 const Chats = require("../model/public-chat");
 const DiceGame = require("../model/dice_game");  
-// const { CrashGameEngine } = require("../controller/crashControllers");
+const { CrashGameEngine } = require("../controllers/crashControllers");
 
 async function createsocket(httpServer) {
   const io = new Server(httpServer, {
@@ -10,14 +10,14 @@ async function createsocket(httpServer) {
     },
   });
 
-  //Crash Game
-  // new CrashGameEngine(io)
-  //   .run((latestBet) => {
-  //     io.emit("latest-bet", latestBet);
-  //   })
-  //   .catch((err) => {
-  //     console.log("Crash Game failed to start ::> ", err);
-  //   });
+  // Crash Game
+  new CrashGameEngine(io)
+    .run((latestBet) => {
+      io.emit("latest-bet", latestBet);
+    })
+    .catch((err) => {
+      console.log("Crash Game failed to start ::> ", err);
+    });
 
   let newMessage = await Chats.find();
   const handleNewChatMessages = async (data) => {

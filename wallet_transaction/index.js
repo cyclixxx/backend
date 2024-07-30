@@ -69,7 +69,6 @@ const handleAllWallets = (async(user_id)=>{
     return wallet
 })
 
-
 // ================ store CP wallet details ===================
 const createCP = (async(user_id)=>{
     let balance =  0
@@ -116,9 +115,27 @@ const handleChangeDefaultWalletEl = (async(user_id ,data, res)=>{
     return res.status(200).json(wallet)
 })
 
+const fetchWallet = (async(req, res)=>{
+    try{
+        const user_id = req.id
+        const wallet = req.params.wallet
+        if(wallet === "fun"){
+            const result = await FunCoupon.findOne({user_id})
+            return res.status(200).json(result)
+        }
+        if(wallet === "usd"){
+            const result = await ClyclixDollar.findOne({user_id})
+            return res.status(200).json(result)
+        }
+    }
+    catch(err){
+        return res.status(401).json("Internal Sever Error")
+    }
+})
+
 const wallet = {
     dollar: ClyclixDollar,
     fun: FunCoupon
 }
 
-module.exports = {createFC, createCD, createCP,wallet,  handleWalletInstance, handleAllWallets, handleChangeDefaultWalletEl }
+module.exports = {createFC, createCD, createCP,wallet,fetchWallet,  handleWalletInstance, handleAllWallets, handleChangeDefaultWalletEl }

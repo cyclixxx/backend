@@ -2,9 +2,11 @@ const express = require('express')
 const router = express.Router()
 
 const controller = require('../../controllers/profile.controller')
+const wallet = require('../../wallet_transaction/index')
 const requireAuth = require('../../middleware/requireAuth')
 
 router.get('/user-id/:id', controller.externalProfile)
+
 
 // auth middleware
 router.use(requireAuth);
@@ -27,5 +29,6 @@ router.post('/check-email', controller.handleCheckEmailChange)
 router.post('/change-defaultwallet', controller.handleChangeDefaultWallet)
 router.post('/verify-password', controller.handlePasswordValidation)
 router.post('/change-password', controller.handleChangePassword)
+router.get('/wallet/:wallet', wallet.fetchWallet)
 
 module.exports = router
