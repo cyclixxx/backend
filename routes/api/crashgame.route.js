@@ -3,11 +3,11 @@ const router = express.Router()
 const requireAuth = require('../../middleware/requireAuth')
 const game = require('../../controllers/crashControllers');
 
-
 router.post('/scripts/list', game.handleScriptList)
 router.get('/history', game.handleCrashHistory)
 router.get('/details/:betID', game.handleBetDetails)
 router.get('/players/:gameID', game.handleCrashGamePlayers)
+router.post('/verify', game.verify)
 
 // auth middleware
 router.use(requireAuth);

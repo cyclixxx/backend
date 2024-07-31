@@ -7,7 +7,7 @@ const { createsocket } = require("./socket/index.js");
 const { createServer } = require("node:http");
 
 require("dotenv").config();
-// // ============ Initilize the app ========================
+// ============ Initilize the app ========================
 const app = express();
 app.use(express.json({limit: '50mb'}));
 app.use(bodyParser.json({limit: '50mb'}));

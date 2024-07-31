@@ -8,6 +8,7 @@ const CrashGameModel = require("../model/crashgameV2");
 const CrashGameLock = require("../model/crash_endgame_lock");
 const CrashGameHash = require("../model/crashgamehash");
 const GameScripts = require("../model/gamescript");
+const CryptoJS = require("crypto-js")
 // const { handleWagerIncrease } = require("../profile_mangement/index");
 
 const crypto = require("crypto");
@@ -24,32 +25,30 @@ const GameStatus = {
   ENDED: 3,
 };
 
+
 const SALT = "Qede00000000000w00wd001bw4dc6a1e86083f95500b096231436e9b25cbdd0075c4";
 
-function calculateCrashPoint(hash) {
-  let seed = crypto
-    .createHmac("sha256", SALT)
-    .update(hash, "hex")
-    .digest("hex");
+function calculateCrashPoint(seed) {
   const nBits = 52; // number of most significant bits to use
-  // 1. r = 52 most significant bits
+
+  // 1. HMAC_SHA256(message=seed, key=salt)  
+  const hmac = CryptoJS.HmacSHA256(CryptoJS.enc.Hex.parse(seed), SALT);
+  seed = hmac.toString(CryptoJS.enc.Hex);
+
+  // 2. r = 52 most significant bits
   seed = seed.slice(0, nBits / 4);
   const r = parseInt(seed, 16);
-  // 2. X = r / 2^52
+
+  // 3. X = r / 2^52
   let X = r / Math.pow(2, nBits); // uniformly distributed in [0; 1)
-  // 3. X = 99 / (1-X)
+  X = parseFloat(X.toPrecision(9));
+
+  // 4. X = 99 / (1-X)
   X = 99 / (1 - X);
-  // 4. return max(trunc(X), 100)
+
+  // 5. return max(trunc(X), 100)
   const result = Math.floor(X);
   return Math.max(1, result / 100);
-
-  // const randomValueHex = hash.substring(0, 13);
-  // const randomValueDecimal = parseInt(randomValueHex, 16);
-  // const max13CharHex = 0x10000000000000;
-  // const randomNumber = randomValueDecimal / max13CharHex;
-  // let multiplier = 99 / (1 - randomNumber);
-  // multiplier = Math.max(multiplier, 100);
-  // return Math.round((multiplier / 100) * 100) / 100; // rounding to 2 decimal places
 }
 
 function calculateElapsed(t) {
@@ -965,33 +964,6 @@ const handleScriptList = async (req, res) => {
   }
 };
 
-const input = `13d64828e4187853581fdaf22758c13843bbb91e518c67a44c6b55a1cc3e3a5a`;
-const numberOfTimesToHash = 300000;
-function generateHashes(seed, numberOfHashes) {
-  let currentHash = seed;
-  return new Promise((resolve) => {
-    const createHash = async () => {
-      if (numberOfHashes-- > 0) {
-        currentHash = crypto
-          .createHash("sha256")
-          .update(currentHash)
-          .digest("hex");
-        await CrashGameHash.create([
-          {
-            hash: currentHash,
-          },
-        ]);
-        console.log("generated hash => ", currentHash, numberOfHashes);
-        setTimeout(createHash, 50);
-      } else {
-        console.log("Generated hashes completed");
-        resolve(0);
-      }
-    };
-    createHash();
-  });
-}
-// generateHashes(input, numberOfTimesToHash);
 
 const resetCrashDB = async () => {
   // await Promise.all([
@@ -1003,8 +975,43 @@ const resetCrashDB = async () => {
   console.log("Reset complete");
 };
 
+const verify = (async(req, res)=>{
+  try{
+    const { data } = req.body
+    const gameResult = (seed, salt) => {
+      const nBits = 52; // number of most significant bits to use
+    
+      // 1. HMAC_SHA256(message=seed, key=salt)  
+      const hmac = CryptoJS.HmacSHA256(CryptoJS.enc.Hex.parse(seed), salt);
+      seed = hmac.toString(CryptoJS.enc.Hex);
+    
+      // 2. r = 52 most significant bits
+      seed = seed.slice(0, nBits / 4);
+      const r = parseInt(seed, 16);
+    
+      // 3. X = r / 2^52
+      let X = r / Math.pow(2, nBits); // uniformly distributed in [0; 1)
+      X = parseFloat(X.toPrecision(9));
+    
+      // 4. X = 99 / (1-X)
+      X = 99 / (1 - X);
+    
+      // 5. return max(trunc(X), 100)
+      const result = Math.floor(X);
+      return Math.max(1, result / 100);
+    };
+    const point = gameResult(data?.hash_seed, data?.salt)
+    return res.status(200).json(point)
+  }
+  catch(err){
+    console.log(err)
+    return res.status(403).json("Server Error")
+  }
+})
+
 module.exports = {
   CrashGameEngine,
+  verify,
   handleCrashHistory,
   handleMybets,
   handleCrashGamePlayers,
