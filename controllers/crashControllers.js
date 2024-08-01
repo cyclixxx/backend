@@ -964,7 +964,33 @@ const handleScriptList = async (req, res) => {
   }
 };
 
-
+const input = `13d64828e4187853581fdaf22758c13843bbb91e518c67a44c6b55a1cc3e3a5a`;
+const numberOfTimesToHash = 300000;
+function generateHashes(seed, numberOfHashes) {
+  let currentHash = seed;
+  return new Promise((resolve) => {
+    const createHash = async () => {
+      if (numberOfHashes-- > 0) {
+        currentHash = crypto
+          .createHash("sha256")
+          .update(currentHash)
+          .digest("hex");
+        await CrashGameHash.create([
+          {
+            hash: currentHash,
+          },
+        ]);
+        console.log("generated hash => ", currentHash, numberOfHashes);
+        setTimeout(createHash, 50);
+      } else {
+        console.log("Generated hashes completed");
+        resolve(0);
+      }
+    };
+    createHash();
+  });
+}
+// generateHashes(input, numberOfTimesToHash);
 
 const resetCrashDB = async () => {
   // await Promise.all([

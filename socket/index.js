@@ -10,7 +10,7 @@ async function createsocket(httpServer) {
     },
   });
 
-  // Crash Game
+  // Crash Gamem
   new CrashGameEngine(io)
     .run((latestBet) => {
       io.emit("latest-bet", latestBet);
