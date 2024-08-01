@@ -6,7 +6,7 @@ const { CrashGameEngine } = require("../controllers/crashControllers");
 async function createsocket(httpServer) {
   const io = new Server(httpServer, {
     cors: {
-      origin: ["https://playtrickygames.netlify.app","http://localhost:5173","http://localhost:5174" ]
+      origin: ["https://magenta-stroopwafel-133857.netlify.app/","http://localhost:5173","http://localhost:5174" ]
     },
   });
 

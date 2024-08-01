@@ -965,6 +965,7 @@ const handleScriptList = async (req, res) => {
 };
 
 
+
 const resetCrashDB = async () => {
   // await Promise.all([
   //   CrashBet.deleteMany({}),
