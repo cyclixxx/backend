@@ -9,11 +9,13 @@ router.get('/details/:betID', game.handleBetDetails)
 router.get('/players/:gameID', game.handleCrashGamePlayers)
 router.post('/verify', game.verify)
 
+//Test
+router.post('/generate-hash', game.resetCrashDB)
+
 // auth middleware
-router.use(requireAuth);
-router.post('/my-bet', game.handleMybets);
-router.post('/scripts/add', game.handleScriptAddOrUpdate)
-router.post('/scripts/update', game.handleScriptAddOrUpdate)
-router.post('/scripts/delete', game.handleScriptDelete)
+router.post('/my-bet', requireAuth, game.handleMybets);
+router.post('/scripts/add', requireAuth, game.handleScriptAddOrUpdate)
+router.post('/scripts/update', requireAuth, game.handleScriptAddOrUpdate)
+router.post('/scripts/delete', requireAuth, game.handleScriptDelete)
 
 module.exports = router
