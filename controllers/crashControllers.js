@@ -210,6 +210,7 @@ class CrashGameEngine {
                   avatar: newBet.avatar,
                   hidden: newBet.hidden,
                   bet: newBet.bet,
+                  auto_escape: newBet.x === -200 ? 1.96 : 2,
                   bet_type: newBet.x,
                 },
               },
@@ -277,28 +278,40 @@ class CrashGameEngine {
 
         await this.handlePayouts(rate, session);
 
+
         this.io.to("crash-game").emit("mybet", {
           bets: [
-            ...this.game.bets.map((b) => ({
-              ...b,
-              gameId: this.game.gameId,
-              betAmount: b.bet,
-              winAmount: rate * b.bet,
-              odds: rate * 10000,
-              type: b.betType,
-              time: b.betTime,
-              name: b.hidden ? "Hidden" : b.name,
-            })),
-            ...this.game.xBets.map((b) => ({
-              ...b,
-              gameId: this.game.gameId,
-              betAmount: b.bet,
-              winAmount: rate * b.bet,
-              odds: rate * 10000,
-              type: b.betType,
-              time: b.betTime,
-              name: b.hidden ? "Hidden" : b.name,
-            })),
+            ...this.game.bets.map((b) => {
+              const escapeRate = this.game.escapes.find(e => e.userId === b.userId)?.rate || 0
+              const data = {
+                ...b,
+                gameId: this.game.gameId,
+                betAmount: b.bet,
+                winAmount: escapeRate * b.bet,
+                odds: escapeRate * 10000,
+                type: b.betType,
+                time: b.betTime,
+                name: b.hidden ? "Hidden" : b.name,
+              }
+              return data;
+            }),
+            ...this.game.xBets.map((b) => {
+              let escapeRate = b.x === -200 ? 1.96 : (b.x === 200 ? 2 : 10);
+              if ((b.x === -200 && rate > 2) || (b.x === 200 && rate < 2) || (b.x === 1000 && rate < 10)) {
+                escapeRate = 0;
+              } 
+              const data = {
+                ...b,
+                gameId: this.game.gameId,
+                betAmount: b.bet,
+                winAmount: escapeRate * b.bet,
+                odds: escapeRate * 10000,
+                type: b.betType,
+                time: b.betTime,
+                name: b.hidden ? "Hidden" : b.name,
+              };
+              return data;
+             }),
           ],
         });
 
@@ -719,7 +732,7 @@ const handleCrashGamePlayers = async (req, res) => {
 };
 const handleMybets = async (req, res) => {
   try {
-    const { user_id } = req.id;
+    const user_id = req.id;
     const { size } = req.body;
     const data = await CrashBet.find({ user_id })
       .sort({ _id: -1 })
@@ -758,7 +771,7 @@ const handleMybets = async (req, res) => {
 
 const handleScriptAddOrUpdate = async (req, res) => {
   try {
-    const { user_id } = req.id;
+    const user_id = req.id;
     const { id: script_id, content, name } = req.body;
     let script = await GameScripts.findOne({ user_id, script_id }).lean();
     if (!script) {
@@ -778,7 +791,7 @@ const handleScriptAddOrUpdate = async (req, res) => {
   }
 };
 const handleScriptDelete = async (req, res) => {
-  const { user_id } = req.id;
+  const user_id = req.id;
   const { id: script_id } = req.body;
   try {
     await GameScripts.findOneAndDelete({ user_id, script_id });
@@ -992,7 +1005,7 @@ function generateHashes(seed, numberOfHashes) {
 }
 // generateHashes(input, numberOfTimesToHash);
 
-const resetCrashDB = async () => {
+const resetCrashDB = async (req, res) => {
   // await Promise.all([
   //   CrashBet.deleteMany({}),
   //   CrashGameModel.deleteMany({}),
@@ -1000,6 +1013,7 @@ const resetCrashDB = async () => {
   // ]);
   await generateHashes(input, 2_000);
   console.log("Reset complete");
+  res.status(200).join({ message: "Done" });
 };
 
 const verify = (async(req, res)=>{
