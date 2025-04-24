@@ -1,6 +1,6 @@
 const { Server } = require("socket.io");
-const Chats = require("../model/public-chat");
 const DiceGame = require("../model/dice_game");  
+const PubicChats = require("../controllers/Chat");
 const { CrashGameEngine } = require("../controllers/crashControllers");
 
 async function createsocket(httpServer) {
@@ -19,20 +19,15 @@ async function createsocket(httpServer) {
       console.log("Crash Game failed to start ::> ", err);
     });
 
-  let newMessage = await Chats.find();
-  const handleNewChatMessages = async (data) => {
-    if(data.type === "normal"){
-      if(newMessage.length > 100){
-        newMessage.shift()
-        newMessage.push(data)
-      }
-      else{
-        newMessage.push(data)
-      }
+    new PubicChats(io)
+    .getChatsfromDB((newMessage) => {
       io.emit("new-message", newMessage);
-      await Chats.create(data);
-    }
-  };
+    })
+    .catch((err) => {
+      console.log("Chat failed to start ::> ", err);
+    });
+
+
 
   let fghhs = await DiceGame.find().limit(20)
   let activeplayers = [...fghhs];
@@ -49,9 +44,6 @@ async function createsocket(httpServer) {
   io.on("connection", (socket) => {
     socket.on("dice-game", (data) => {
       DiceActivePlayers(data);
-    });
-    socket.on("public-chat", (data) => {
-      handleNewChatMessages(data);
     });
   });
 }

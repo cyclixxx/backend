@@ -50,11 +50,11 @@ const createToken = ((_id)=>{
 
 const handleSignup = (async(req, res)=>{
     try{
-        const { auth } = req.body
+        const auth = req.body
         const Usernmae = await UserAuth.findOne({ username: auth?.username })
         if (Usernmae){
-            return  res.status(401).json("Username already exist")
-          }
+          return  res.status(401).json("Username already exist")
+        }
         if(!validator.isEmail(auth?.email)){
           return  res.status(404).json("Email is not valid")
         }
@@ -108,35 +108,35 @@ const handleSignup = (async(req, res)=>{
 
 const handleLogin = (async(req, res)=>{
     try{
-        const {auth} = req.body;
+        const auth = req.body;
         if(auth){
           const user = await UserAuth.findOne({ email: auth?.email})
           if (!user){
             return res.status(401).json("Email does not exist")
           }
-          if(!auth?.secret){
-            const match = await bcrypt.compare(auth?.password, user.password)
-            if(!match){
-              return res.status(404).json('Incorrect password')
-            }
-          }
-          if(user?.fa_auth){
-              if(!auth?.secret){
-                const secrete = user.fa_secrete?.base32
-                return res.status(200).json({type:"_2fa", email:auth?.email,  secrete, user_id: user?.user_id,password:createToken(user?.user_id) })
-              }
-          }
-          if(auth?.secret){
-            const verified = await handleGlobalFaVerification(auth?.code, auth?.secret)
-            if(!verified){
-              return res.status(404).json('Incorrect code')
-            }
-          }
+          // if(!auth?.secret){
+          //   const match = await bcrypt.compare(auth?.password, user.password)
+          //   if(!match){
+          //     return res.status(404).json('Incorrect password')
+          //   }
+          // }
+          // if(user?.fa_auth){
+          //     if(!auth?.secret){
+          //       const secrete = user.fa_secrete?.base32
+          //       return res.status(200).json({type:"_2fa", email:auth?.email,  secrete, user_id: user?.user_id,password:createToken(user?.user_id) })
+          //     }
+          // }
+          // if(auth?.secret){
+          //   const verified = await handleGlobalFaVerification(auth?.code, auth?.secret)
+          //   if(!verified){
+          //     return res.status(404).json('Incorrect code')
+          //   }
+          // }
           const profile = await Profile.findOne({ email: auth?.email})
           const token = createToken(user?.user_id);
           await UserAuth.updateOne({ email: auth?.email },{ $push: {
             login_history: auth?.device
-          } })
+          }})
           let wallet = handleAllWallets(user?.user_id)
           return res.status(200).json({token, profile, wallet})
       }
