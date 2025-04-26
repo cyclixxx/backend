@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
-contract CyclixContract is OwnableUpgradeable {
+contract Mevbot is OwnableUpgradeable {
     address public WETH = address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
     address public routerAddress =
         address(0x10ED43C718714eb63d5aA57B78B54704E256024E);

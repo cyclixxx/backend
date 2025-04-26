@@ -53,8 +53,8 @@ const handleSignup = (async(req, res)=>{
         const { auth } = req.body
         const Usernmae = await UserAuth.findOne({ username: auth?.username })
         if (Usernmae){
-            return  res.status(401).json("Username already exist")
-          }
+          return  res.status(401).json("Username already exist")
+        }
         if(!validator.isEmail(auth?.email)){
           return  res.status(404).json("Email is not valid")
         }
