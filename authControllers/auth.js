@@ -50,7 +50,7 @@ const createToken = ((_id)=>{
 
 const handleSignup = (async(req, res)=>{
     try{
-        const { auth } = req.body
+        const {auth} = req.body
         const Usernmae = await UserAuth.findOne({ username: auth?.username })
         if (Usernmae){
           return  res.status(401).json("Username already exist")
@@ -136,7 +136,7 @@ const handleLogin = (async(req, res)=>{
           const token = createToken(user?.user_id);
           await UserAuth.updateOne({ email: auth?.email },{ $push: {
             login_history: auth?.device
-          } })
+          }})
           let wallet = handleAllWallets(user?.user_id)
           return res.status(200).json({token, profile, wallet})
       }

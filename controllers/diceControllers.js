@@ -6,6 +6,7 @@ const { format } = require('date-fns');
 const { wallet } = require("../wallet_transaction")
 const currentTime = format(new Date(), 'yyyy-MM-dd HH:mm:ss');
 const Bills = require("../model/bill");
+const { Console } = require('console');
 let nonce = 0
 let maxRange = 100
 const salt = 'Qede00000000000w00wd001bw4dc6a1e86083f95500b096231436e9b25cbdd0075c4';
@@ -30,10 +31,6 @@ const handleHashGeneration = (() => {
 
 async function handleUpdatewallet(data) {
   try {
-    await DiceEncription.updateOne(
-      { user_id: data.user_id }, {
-      nonce: parseFloat(data.nonce) + 1
-    });
     if (data.token === "Fun Coupons") {
       let sjj = await wallet?.fun.findOne({ user_id: data.user_id });
       let prev_bal = parseFloat(sjj.balance);
@@ -100,16 +97,26 @@ async function handleDiceBEt(data) {
     bill_id: data.bet_id,
   };
   await Bills.create(bil);
+
 }
 
-function handleMybet(e, data, prev_bal, res, user_id) {
+async function getNonce(user_id){
+  const result = await DiceEncription.findOneAndUpdate({user_id},{
+    $inc: { nonce: 1 }
+  })
+  return result
+}
+
+function handleMybet(e, data, prev_bal, res, user_id, seed) {
+
   if (data.is_roll_under) {
     if (parseFloat(e.cashout) < parseFloat(data.chance)) {
       let wining_amount = parseFloat(data.wining_amount);
       let current_amount = parseFloat(prev_bal + wining_amount).toFixed(4);
-      handleUpdatewallet({ has_won: true, current_amount, ...data, user_id });
+      handleUpdatewallet({ has_won: true, current_amount, ...data, user_id, ...seed });
       const bet_data = {
           ...e,
+          ...seed,
           ...data,
           current_amount,
           has_won: true,
@@ -122,17 +129,17 @@ function handleMybet(e, data, prev_bal, res, user_id) {
     } else {
       let bet_amount = parseFloat(data.bet_amount);
       let current_amount = parseFloat(prev_bal - bet_amount).toFixed(4);
-      handleUpdatewallet({ current_amount, has_won: false, ...data , user_id});
+      handleUpdatewallet({ current_amount, has_won: false, ...data , user_id, ...seed});
       const bet_data =  {
           ...e,
           ...data,
+          ...seed,
           current_amount,
           has_won: false,
           profit: 0,
           bet_id: Math.floor(Math.random() * 100000000000) + 720000000000,
           user_id
         }
-
       handleDiceBEt(bet_data);
       return res.status(200).json(bet_data);
     }
@@ -141,10 +148,11 @@ function handleMybet(e, data, prev_bal, res, user_id) {
     if (parseFloat(e.cashout) > parseFloat(data.chance)) {
       let wining_amount = parseFloat(data.wining_amount);
       let current_amount = parseFloat(prev_bal + wining_amount).toFixed(4);
-      handleUpdatewallet({ has_won: true, current_amount, ...data, user_id });
+      handleUpdatewallet({ has_won: true, current_amount, ...data, user_id, ...seed  });
       const bet_data = {
           ...e,
           ...data,
+          ...seed,
           current_amount,
           has_won: true,
           profit: wining_amount,
@@ -156,10 +164,11 @@ function handleMybet(e, data, prev_bal, res, user_id) {
     } else {
       let bet_amount = parseFloat(data.bet_amount);
       let current_amount = parseFloat(prev_bal - bet_amount).toFixed(4);
-      handleUpdatewallet({ current_amount, has_won: false, ...data , user_id});
+      handleUpdatewallet({ current_amount, has_won: false, ...data , user_id, ...seed });
       const bet_data = {
           ...e,
           ...data,
+          ...seed,
           current_amount,
           has_won: false,
           profit: 0,
@@ -176,7 +185,7 @@ const HandlePlayDice = (async(req, res) => {
   const user_id = req.id
   let { data } = req.body
 
-  const handleDicePoints = (e, bal, res, user_id) => {
+  const handleDicePoints = (e, bal, res, user_id, seed) => {
     function generateRandomNumber(serverSeed, clientSeed, nonce) {
       const combinedSeed = `${serverSeed}-${clientSeed}-${nonce}-${salt}`;
       const hmac = crypto.createHmac("sha256", combinedSeed);
@@ -191,14 +200,15 @@ const HandlePlayDice = (async(req, res) => {
       };
       return row;
     }
-    let kjks = generateRandomNumber(
-      e.server_seed,
-      e.client_seed,
-      e.nonce
-    );
-    handleMybet(kjks, e, bal, res, user_id);
-  };
 
+    let kjks = generateRandomNumber(
+      seed.server_seed,
+      seed.client_seed,
+      seed.nonce
+    );
+    handleMybet(kjks, e, bal, res, user_id, seed);
+  };
+  const seeds = await getNonce(user_id)
   let wallet_bal = null
   if(data.token === "USD"){
       let response = await wallet?.dollar.findOne({user_id})
@@ -214,7 +224,7 @@ const HandlePlayDice = (async(req, res) => {
   if(data.bet_amount > wallet_bal){
     return res.status(500).json({error: "Insufficient funds"})
   }else{
-    handleDicePoints(data, wallet_bal, res, user_id)
+    handleDicePoints(data, wallet_bal, res, user_id, seeds)
   }
 })
 
@@ -275,8 +285,9 @@ const InitializeDiceGame = (async (user_id) => {
 const handleDiceGameEncryption = (async (req, res) => {
   try {
     const user_id  = req.id
-    let result = await DiceEncription.findOne({ user_id })
-    res.status(200).json(result)
+    let history = await DiceGame.find({ user_id }).limit(15)
+    let encrypt = await DiceEncription.findOne({ user_id })
+    res.status(200).json({history, encrypt})
   }
   catch (err) {
     console.log(err)
